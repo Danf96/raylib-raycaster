@@ -8,7 +8,7 @@ set(CMAKE_C_STANDARD 11)
 # Dependencies
 set(RAYLIB_VERSION 5.0)
 find_package(raylib ${RAYLIB_VERSION} QUIET) # QUIET or REQUIRED
-add_definitions(-DSUPPORT_FILEFORMAT_BMP)
+add_definitions(-DSUPPORT_FILEFORMAT_BMP -DSUPPORT_FILEFORMAT_PNG)
 if (NOT raylib_FOUND) # If there's none, fetch and build raylib
   include(FetchContent)
   FetchContent_Declare(
