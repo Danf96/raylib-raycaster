@@ -17,6 +17,8 @@
 
 #define sprite_total 19
 
+//note, each sprite is 64px width and height, offset by 16px tall, 1px wide
+
 typedef struct
 {
     Vector2 pos;
@@ -116,6 +118,15 @@ int main(void)
     tex[9] = LoadImage("../../res/tex/pillar.png");
     tex[10] = LoadImage("../../res/tex/greenlight.png");
 
+    Texture2D weapon = LoadTexture("../../res/tex/weapons.png");
+    int weapon_width = 64;
+    int weapon_height = 64;
+    Rectangle weapon_src = (Rectangle){.x = 1.f, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height};
+    Rectangle weapon_dst = (Rectangle){.x = screen_width / 2.0f, .y = screen_height - (weapon_height * 2.0f), .height = weapon_height * 4.0f, .width = weapon_width * 4.0f};
+    Vector2 weapon_origin = (Vector2){.x = weapon_width * 2.0f, .y = weapon_height * 2.0f};
+
+    Shader purple_discard = LoadShader(NULL, "../../shaders/purple_discard.fs");
+
     Image image_buffer = GenImageColor(GetScreenWidth(), GetScreenHeight(), BLACK);
     Texture display_texture = LoadTextureFromImage(image_buffer);
 #if 0
@@ -170,6 +181,11 @@ int main(void)
         BeginDrawing();
 
         DrawTexture(display_texture, 0, 0, RAYWHITE);
+
+        // draw weapon over scene and discard all transparent values, weapon_src will be updated to match the correct frame
+        BeginShaderMode(purple_discard);
+        DrawTexturePro(weapon, weapon_src, weapon_dst, weapon_origin, 0.0f, WHITE);
+        EndShaderMode();
 
         EndDrawing();
 // not clearing the buffer because we're always writing over every pixel
