@@ -5,6 +5,7 @@
 #include "raylib.h"
 #include "raymath.h"
 // Following raycasting tutorial from https://lodev.org/cgtutor/raycasting.html
+// NOTE: bug somewhere in the drawing functions, failing to get a valid pixel color value
 
 #define map_width 24
 #define map_height 24
@@ -121,7 +122,11 @@ int main(void)
     Texture2D weapon = LoadTexture("../../res/tex/weapons.png");
     int weapon_width = 64;
     int weapon_height = 64;
-    Rectangle weapon_src = (Rectangle){.x = 1.f, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height};
+    Rectangle weapon_src[5] = {(Rectangle){.x = 1.f, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height}, 
+    (Rectangle){.x = 1.f, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height},
+    (Rectangle){.x = 1.f * 2.f + 64.f * 1, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height},
+    (Rectangle){.x = 1.f * 3.f + 64.f * 2, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height},
+    (Rectangle){.x = 1.f * 4.f + 64.f * 3, .y = (float)(16 * 2 + weapon_height), (float)weapon_width, (float)weapon_height}};
     Rectangle weapon_dst = (Rectangle){.x = screen_width / 2.0f, .y = screen_height - (weapon_height * 2.0f), .height = weapon_height * 4.0f, .width = weapon_width * 4.0f};
     Vector2 weapon_origin = (Vector2){.x = weapon_width * 2.0f, .y = weapon_height * 2.0f};
 
@@ -134,6 +139,8 @@ int main(void)
 #endif
 
     //--------------------------------------------------------------------------------------
+    float weapon_index = 0.f;
+    bool is_weapon_firing;
 
     // Main game loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
@@ -142,9 +149,9 @@ int main(void)
         //----------------------------------------------------------------------------------
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
-        float frameTime = GetFrameTime();
-        float move_speed = frameTime * 5.0f;
-        float rot_speed = frameTime * 3.0f;
+        float frame_time = GetFrameTime();
+        float move_speed = frame_time * 5.0f;
+        float rot_speed = frame_time * 3.0f;
         if (IsKeyDown(KEY_UP))
         {
             if (world_map[(int)(pos.x + dir.x * move_speed)][(int)pos.y] == 0)
@@ -159,7 +166,6 @@ int main(void)
             if (world_map[(int)pos.x][(int)(pos.y + dir.y * move_speed)] == 0)
                 pos.y -= dir.y * move_speed;
         }
-        // look into raylib vec2 rotation functions
         if (IsKeyDown(KEY_RIGHT))
         {
             dir = Vector2Rotate(dir, -rot_speed);
@@ -171,10 +177,24 @@ int main(void)
             dir = Vector2Rotate(dir, rot_speed);
             cam_plane = Vector2Rotate(cam_plane, rot_speed);
         }
+        if (IsKeyDown(KEY_SPACE))
+        {
+            is_weapon_firing = true;
+        }
+        if (is_weapon_firing)
+        {
+            weapon_index = (weapon_index + (frame_time * 10.f)); // max frames
+            if (weapon_index > 4.f)
+            {
+                is_weapon_firing = false;
+                weapon_index = 0.f;
+            }
+        }
         draw_floor_and_ceil(pos, dir, cam_plane, tex, &image_buffer);
         draw_walls(pos, dir, cam_plane, tex, &image_buffer);
         draw_sprites(pos, dir, cam_plane, tex, &image_buffer);
         UpdateTexture(display_texture, image_buffer.data);
+        
 
         // Draw
         //----------------------------------------------------------------------------------
@@ -184,7 +204,7 @@ int main(void)
 
         // draw weapon over scene and discard all transparent values, weapon_src will be updated to match the correct frame
         BeginShaderMode(purple_discard);
-        DrawTexturePro(weapon, weapon_src, weapon_dst, weapon_origin, 0.0f, WHITE);
+        DrawTexturePro(weapon, weapon_src[(int)weapon_index], weapon_dst, weapon_origin, 0.0f, WHITE);
         EndShaderMode();
 
         EndDrawing();
@@ -197,6 +217,14 @@ int main(void)
 
     // De-Initialization
     //--------------------------------------------------------------------------------------
+    UnloadTexture(weapon);
+    UnloadTexture(display_texture);
+    UnloadImage(image_buffer);
+    for (int i = 0; i < (sizeof tex / sizeof tex[0]); i++)
+    {
+        UnloadImage(tex[i]);
+    }
+    UnloadShader(purple_discard);
     CloseWindow(); // Close window and OpenGL context
     //--------------------------------------------------------------------------------------
 
