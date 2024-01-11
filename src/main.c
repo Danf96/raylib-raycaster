@@ -5,7 +5,7 @@
 #include "raylib.h"
 #include "raymath.h"
 // Following raycasting tutorial from https://lodev.org/cgtutor/raycasting.html
-// NOTE: bug somewhere in the drawing functions, failing to get a valid pixel color value
+
 
 #define map_width 24
 #define map_height 24
@@ -34,6 +34,7 @@ void sort_sprites(int order[], float dist[], int amount);
 void draw_floor_and_ceil(Vector2 pos, Vector2 dir, Vector2 cam_plane, Image tex[11], Image *image_buffer);
 void draw_walls(Vector2 pos, Vector2 dir, Vector2 cam_plane, Image tex[11], Image *image_buffer);
 void draw_sprites(Vector2 pos, Vector2 dir, Vector2 cam_plane, Image tex[11], Image *image_buffer);
+int clamp_int (int val, int min, int max);
 
 int world_map[map_width][map_height] =
     {
@@ -420,6 +421,7 @@ void draw_sprites(Vector2 pos, Vector2 dir, Vector2 cam_plane, Image tex[11], Im
         for (int stripe = draw_start_x; stripe < draw_end_x; stripe++)
         {
             int tex_x = (int)(256 * (stripe - (-sprite_width / 2 + sprite_screen_x)) * tex[sprite_num].width / sprite_width) / 256;
+            tex_x = clamp_int(tex_x, 0, tex[sprite_num].width);
 
             // if sprite is in front of camera plane, on screen (left), on screen (right), zbuffer
             if (transform.y > 0 && stripe > 0 && stripe < screen_width && transform.y < z_buf[stripe])
@@ -427,6 +429,8 @@ void draw_sprites(Vector2 pos, Vector2 dir, Vector2 cam_plane, Image tex[11], Im
             {
                 int d = y * 256 - screen_height * 128 + sprite_height * 128;
                 int tex_y = ((d * tex[sprite_num].height) / sprite_height) / 256;
+                // clamp values
+                tex_y = clamp_int(tex_y, 0, tex[sprite_num].height);
                 Color color = GetImageColor(tex[sprite_num], tex_x, tex_y);
                 if (!(color.r == 0 && color.g == 0 && color.b == 0))
                 ImageDrawPixel(image_buffer, stripe, y, color);
@@ -465,4 +469,10 @@ void sort_sprites(int order[], float dist[], int amount)
         order[i] = sprites[amount - i - 1].order;
     }
     free(sprites);
+}
+
+int clamp_int (int val, int min, int max)
+{
+    int result  = val < min ? min : val;
+    return result > max ? max : result;
 }
